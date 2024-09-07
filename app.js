@@ -21,9 +21,9 @@ let game = new Phaser.Game(config);
 function preload() {
     this.load.image('background', 'assets/background.webp');
     this.load.image('road', 'assets/road.png');
-    this.load.image('column', 'assets/tuberia.webp');
-    this.load.image('pikachu', 'assets/pikachu.webp');
-    this.load.image('topColumn', 'assets/topTuberia.webp');
+    this.load.image('column', 'assets/Tuberia.webp');
+    this.load.image('pikachu', 'assets/Pikachu.webp');
+    this.load.image('topColumn', 'assets/TopTuberia.webp');
 }
 
 let hasLanded = false;

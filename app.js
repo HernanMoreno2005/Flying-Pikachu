@@ -12,7 +12,7 @@ let config = {
     scene: {
         preload: preload,
         create: create,
-        update: update
+        update: update,
     }
 };
 
@@ -23,6 +23,7 @@ function preload() {
     this.load.image('road', 'assets/road.png');
     this.load.image('column', 'assets/tuberia.webp');
     this.load.image('pikachu', 'assets/pikachu.webp');
+    this.load.image('topColumn', 'assets/topTuberia.webp');
 }
 
 let hasLanded = false;
@@ -30,6 +31,7 @@ let hasBumped = false;
 let isGameStarted = false;
 let messageToPlayer;
 let messageToPlayer2;
+let intructions;
 let scoreMessage;
 let backgroundMessage;
 let speed = 50;  
@@ -44,7 +46,9 @@ let gameOver = false;
 let restartMessage;
 let topColumns;
 let bottomColumns;
-
+let description;
+let controls;
+let bestScoremessage
 
 function hitColumn(pikachu, column) {
     pikachu.setVelocityX(0);
@@ -61,62 +65,28 @@ function hitColumn(pikachu, column) {
     }
 }
 
-function restartGame() {
-    pikachu.setVelocityX(0);
-    pikachu.setVelocityY(0);
-
-    topColumns.children.iterate(function (col) {
-        col.setVelocityX(0);
-    });
-    bottomColumns.children.iterate(function (col) {
-        col.setVelocityX(0);
-    });
-
-    background.tilePositionX = 0;
-
-    score = 0;
-    scoreMessage.setText('Score: ' + score);
-
-    pikachu.setPosition(100, 200);
-
-    topColumns.children.iterate(function (column) {
-        column.displayHeight = Phaser.Math.Between(150, 400); 
-        column.setPosition(1200, Phaser.Math.Between(0, 600 - column.displayHeight));
-        column.setVelocityX(-speed);
-        column.passed = false;
-    });
-    bottomColumns.children.iterate(function (column) {
-        column.displayHeight = Phaser.Math.Between(150, 400);  
-        column.setPosition(1200, 690);
-        column.setVelocityX(-speed);
-    });
-
-    isGameStarted = false;
-    gameOver = false;
-}
-
 function create() {
     background = this.add.tileSprite(0, 0, 1920, 1000, 'background').setOrigin(0, 0);
     const roads = this.physics.add.staticGroup();
     const road = roads.create(500, 860, 'road').setScale(2).refreshBody();
     road.displayWidth = 2700; 
-    road.displayHeight = 150;
+    road.displayHeight = 190;
   
     topColumns = this.physics.add.group({
-        key: 'column',
-        repeat: 500,
+        key: 'topColumn',
+        repeat: 499,
         setXY: { x: 1200, y: 0, stepX: 300 }
     });
   
     bottomColumns = this.physics.add.group({
         key: 'column',
-        repeat: 500,
+        repeat: 499,
         setXY: { x: 1200, y: 690, stepX: 300 }
     });
   
     topColumns.children.iterate(function (column) {
         column.displayWidth = 100;
-        column.displayHeight = Phaser.Math.Between(150, 400);  
+        column.displayHeight = Phaser.Math.Between(150, 430);  
         column.setImmovable(true);
         column.setGravityY(0);
         column.setVelocityX(-speed);
@@ -126,7 +96,7 @@ function create() {
   
     bottomColumns.children.iterate(function (column) {
         column.displayWidth = 100;
-        column.displayHeight = Phaser.Math.Between(150, 400);  
+        column.displayHeight = Phaser.Math.Between(150, 430);  
         column.setImmovable(true);
         column.setGravityY(0);
         column.setVelocityX(-speed);
@@ -148,13 +118,24 @@ function create() {
     backgroundMessage = this.add.graphics();
     backgroundMessage.fillStyle(0xFC6B4C, 1);
     backgroundMessage.fillRoundedRect(500, 50, 750, 500, 20);
-  
-    messageToPlayer = this.add.text(500 + 750 / 4, 50 + 500 / 4, 'Flying Pikachu!', {
+    messageToPlayer = this.add.text(530 + 750 / 3.5, 100, 'Flying Pikachu!', {
         font: 'bold 32px Arial',
         fill: '#ffffff',
     });
   
-    messageToPlayer2 = this.add.text(500 + 750 / 3, 50 + 500 / 3, 'Press space to start', {
+     controls = this.add.text(520, 300, '- Controls: ', {
+        font: 'bold 32px Arial',
+        fill: '#ffffff',
+    });
+    intructions = this.add.text(520, 400, '- Press W to fly', {
+        font: 'bold 32px Arial',
+        fill: '#ffffff',
+    });
+     description = this.add.text(520, 200, 'Help Pikachu pass through the 500 pipes!', {
+        font: 'bold 32px Arial',
+        fill: '#ffffff',
+    });
+    messageToPlayer2 = this.add.text(500 + 750 / 3.5, 500, 'Press space to start', {
         font: 'bold 32px Arial',
         fill: '#ffffff',
     });
@@ -167,13 +148,77 @@ function create() {
     });
     this.restartMessage.setVisible(false);
 
+    this.restartGame = function () {
+        score = 0;
+        scoreMessage.setText('Score: ' + score);
+        bestScore = localStorage.getItem('bestScore');
+        if(!bestScore){
+            localStorage.getItem('bestScore',0);
+            bestScore = 0;
+        }
+        bestScoremessage.setText('Best Score: ' + bestScore);
+        isGameStarted = false;
+        hasLanded = false;
+        hasBumped = false;
+        gameOver = false;
+        speed = 50;
 
+        pikachu.setVelocity(0, 0);
+        pikachu.setPosition(100, 200);
+
+        this.restartMessage.setVisible(false);
+        backgroundMessage.setVisible(true);
+        messageToPlayer.setVisible(true);
+        messageToPlayer2.setVisible(true);
+        description.setVisible(true);
+        controls.setVisible(true);
+        intructions.setVisible(true);
+        scoreMessage.setVisible(false);
+
+        topColumns.clear(true, true);
+        bottomColumns.clear(true, true);
+
+        topColumns = this.physics.add.group({
+            key: 'topColumn',
+            repeat: 499,
+            setXY: { x: 1200, y: 0, stepX: 300 }
+        });
+
+        bottomColumns = this.physics.add.group({
+            key: 'column',
+            repeat: 499,
+            setXY: { x: 1200, y: 690, stepX: 300 }
+        });
+
+        topColumns.children.iterate(function (column) {
+            column.displayWidth = 100;
+            column.displayHeight = Phaser.Math.Between(150, 430);
+            column.setImmovable(true);
+            column.setGravityY(0);
+            column.setVelocityX(-speed);
+            column.body.allowGravity = false;
+        });
+
+        bottomColumns.children.iterate(function (column) {
+            column.displayWidth = 100;
+            column.displayHeight = Phaser.Math.Between(150, 430);
+            column.setImmovable(true);
+            column.setGravityY(0);
+            column.setVelocityX(-speed);
+            column.body.allowGravity = false;
+        });
+
+        background.tilePositionX = 0;
+
+        this.physics.add.collider(pikachu, topColumns, (pikachu, column) => hitColumn.call(this, pikachu, column));
+        this.physics.add.collider(pikachu, bottomColumns, (pikachu, column) => hitColumn.call(this, pikachu, column));
+    }.bind(this); 
 }
 
 
 
 function update() {
-    const maxX = config.width / 2;
+    const maxX = config.width / 3;
 
     if (this.wKey.isDown && !hasLanded && !gameOver) {
         pikachu.setVelocityY(-160);
@@ -196,12 +241,13 @@ function update() {
         messageToPlayer.setVisible(false);
         backgroundMessage.setVisible(false);
         messageToPlayer2.setVisible(false);
+        description.setVisible(false);
+        controls.setVisible(false);
+        intructions.setVisible(false);
         scoreMessage.setVisible(true);
     }
 
     if (isGameStarted) {
-        background.tilePositionX += speed;
-
         topColumns.children.iterate(function (column) {
             if (column.x < pikachu.x && !column.passed) {
                 column.passed = true;  
@@ -212,7 +258,9 @@ function update() {
     }
 
     if (!isGameStarted || gameOver) {
-        pikachu.setVelocityY(-160);
+        if(!isGameStarted){
+            pikachu.setVelocityY(-160);
+        }
         pikachu.setVelocityX(0);
         bottomColumns.children.iterate(function (column) {
             column.setVelocityX(0); 
@@ -223,7 +271,7 @@ function update() {
         if (gameOver) {
             this.restartMessage.setVisible(true);
             if (cursors.space.isDown) {
-                restartGame();
+                this.restartGame();
                 gameOver = false;
             }
         }
@@ -250,9 +298,9 @@ function update() {
         pikachu.setVelocityY(0);
     }
 
-    if (!hasLanded && !hasBumped) {
+    if (!hasLanded && !hasBumped && isGameStarted) {
         pikachu.body.velocity.x = 50;
-    } else {
+    } else{
         pikachu.body.velocity.x = 0;
         background.tilePositionX = 0;
         if(score > bestScore){
@@ -260,8 +308,27 @@ function update() {
         }
         localStorage.getItem('bestScore',bestScore)
         if (cursors.space.isDown) {
-            restartGame();
+            this.restartGame();
             gameOver = false;
         }
+    }
+    if (score % 10 === 0) {
+        speed += 1.5;  
+    }
+    if (score == 500) {
+        this.restartMessage.setText('You win! Press space to restart');
+        gameOver = true;
+    pikachu.setVelocity(0, 0);
+    bottomColumns.children.iterate(function (column) {
+        column.setVelocityX(0);
+    });
+    topColumns.children.iterate(function (column) {
+        column.setVelocityX(0);
+    });
+    this.add.text(400, 300, 'Game Over! Score: ' + score, {
+        font: 'bold 32px Arial',
+        fill: '#ffffff'
+    }).setOrigin(0.5);
+    gameOver = true;
     }
 }
